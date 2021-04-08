@@ -41,7 +41,7 @@ class SpotbugsParser(object):
         for bug in root.findall('BugInstance'):
             desc = ''
             for message in bug.itertext():
-                desc += message
+                desc += message + '\n'
 
             dupe_key = bug.get('instanceHash')
 
