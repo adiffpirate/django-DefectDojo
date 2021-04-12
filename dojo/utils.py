@@ -161,7 +161,7 @@ def do_replicate_false_positive(new_finding, *args, **kwargs):
             try:
                 new_finding.false_p = True
                 new_finding.active = False
-                new_finding.verified = True
+                new_finding.verified = False
                 super(Finding, new_finding).save(*args, **kwargs)
             except Exception as e:
                 deduplicationLogger.debug(str(e))
