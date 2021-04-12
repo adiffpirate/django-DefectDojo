@@ -1583,6 +1583,18 @@ class Finding(models.Model):
                                      on_delete=models.CASCADE,
                                      verbose_name="Mitigated By",
                                      help_text="Documents who has marked this flaw as fixed.")
+    mitigated_at = models.ForeignKey(
+        Engagement,
+        null=True,
+        editable=False,
+        related_name="mitigated_at",
+        on_delete=models.CASCADE,
+        verbose_name="Mitigated At",
+        help_text=(
+            "Documents which engagement fixed this finding "
+            "(in case it was automatically closed)"
+        )
+    )
     reporter = models.ForeignKey(User,
                                  editable=False,
                                  default=1,

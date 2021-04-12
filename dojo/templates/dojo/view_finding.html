@@ -233,19 +233,25 @@
                         <th title="Findings that are also marked as duplicates of the same original finding">Duplicate Cluster</th>
                     {% endif %}
                     <th>Type</th>
-                    <th>Date discovered</th>
-                    <th>Age</th>
+                    <th>CWE</th>
+                    <th>CVE</th>
+                    <th>Reporter</th>
                     {% if finding.publish_date %}
                         <th>Vuln Publish date</th>
                     {% endif %}
-                    <th>Reporter</th>
-                    {% if finding.mitigated %}
-                        <th>Date Mitigated</th>
-                        <th>Mitigated By</th>
-                    {% endif %}
-                        <th>CWE</th>
-                        <th>CVE</th>
+                    <th>Found at</th>
                     <th>Found by</th>
+                    <th>Date discovered</th>
+                    {% if not finding.mitigated %}
+                        <th>Age</th>
+                    {% endif %}
+                    {% if finding.mitigated %}
+                        {% if finding.mitigated_at %}
+                            <th>Mitigated at</th>
+                        {% endif %}
+                        <th>Mitigated by</th>
+                        <th>Date mitigated</th>
+                    {% endif %}
                 </tr>
                 <tr>
                     <td>{{ finding.id }}</td>
@@ -356,23 +362,13 @@
                             Dynamic
                         {% endif %}
                     </td>
-                    <td>{{ finding.date }}</td>
-                    <td>{{ finding.age }} days</td>
-                    {% if finding.publish_date %}
-                        <td>{{ finding.publish_date }}</td>
+                    <td>
+                    {% if finding.cwe > 0 %}
+                        <a target="_blank" href="{{ finding.cwe|cwe_url }}">
+                            <i class="fa fa-external-link"></i> {{ finding.cwe }}
+                        </a>
                     {% endif %}
-                    <td>{{ finding.reporter }}</td>
-                    {% if finding.mitigated %}
-                        <td>{{ finding.mitigated }}</td>
-                        <td>{{ finding.mitigated_by }}</td>
-                    {% endif %}
-                        <td>
-                        {% if finding.cwe > 0 %}
-                            <a target="_blank" href="{{ finding.cwe|cwe_url }}">
-                                <i class="fa fa-external-link"></i> {{ finding.cwe }}
-                            </a>
-                        {% endif %}
-                        </td>
+                    </td>
                     {% if finding.cve|slice:":3" == 'CVE' %}
                         <td>
                             <a target="_blank" href="{{ finding.cve |cve_url }}">
@@ -384,10 +380,33 @@
                              {{ finding.cve }}
                          </td>
                     {% endif %}
-                    <td> {% for scanner in found_by %}
-                        {{ scanner }}
-                    {% endfor %}</td>
-
+                    <td>{{ finding.reporter }}</td>
+                    {% if finding.publish_date %}
+                        <td>{{ finding.publish_date }}</td>
+                    {% endif %}
+                    <td>
+                        {% url 'view_engagement' finding.test.engagement.id as engagement_url %}
+                        <a href="{{ engagement_url }}">{{ finding.test.engagement.name }}</a>
+                    </td>
+                    <td>
+                        {% url 'view_test' finding.test.id as test_url %}
+                        <a href="{{ test_url }}">{{ finding.test.test_type_name }}</a>
+                    </td>
+                    <td>{{ finding.date }}</td>
+                    {% if not finding.mitigated %}
+                        <td>{{ finding.age }} days</td>
+                    {% endif %}
+                    </td>
+                    {% if finding.mitigated %}
+                        {% if finding.mitigated_at %}
+                            <td>
+                                {% url 'view_engagement' finding.mitigated_at.id as mitigated_at_url %}
+                                <a href="{{ mitigated_at_url }}">{{ finding.mitigated_at.name }}</a>
+                            </td>
+                        {% endif %}
+                        <td>{{ finding.mitigated_by }}</td>
+                        <td>{{ finding.mitigated.date }}</td>
+                    {% endif %}
                 </tr>
             </table>
         </div>
