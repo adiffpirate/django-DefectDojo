@@ -25,6 +25,7 @@ class TestSemgrepParser(TestCase):
         self.assertEqual(696, finding.cwe)
         self.assertEqual("javax crypto Cipher.getInstance(\"AES/GCM/NoPadding\");", finding.mitigation)
         self.assertEqual("java.lang.security.audit.cbc-padding-oracle.cbc-padding-oracle", finding.vuln_id_from_tool)
+        self.assertEqual("\t\t\tjavax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");", finding.sast_source_code)
 
     def test_parse_many_finding(self):
         testfile = open("dojo/unittests/scans/semgrep/many_findings.json")
@@ -39,6 +40,7 @@ class TestSemgrepParser(TestCase):
         self.assertEqual(696, finding.cwe)
         self.assertEqual("javax crypto Cipher.getInstance(\"AES/GCM/NoPadding\");", finding.mitigation)
         self.assertEqual("java.lang.security.audit.cbc-padding-oracle.cbc-padding-oracle", finding.vuln_id_from_tool)
+        self.assertEqual("\t\t\tjavax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");", finding.sast_source_code)
         finding = findings[2]
         self.assertEqual("Low", finding.severity)
         self.assertEqual("src/main/java/org/owasp/benchmark/testcode/BenchmarkTest01150.java", finding.file_path)
@@ -46,6 +48,7 @@ class TestSemgrepParser(TestCase):
         self.assertEqual(696, finding.cwe)
         self.assertEqual("javax crypto Cipher.getInstance(\"AES/GCM/NoPadding\");", finding.mitigation)
         self.assertEqual("java.lang.security.audit.cbc-padding-oracle.cbc-padding-oracle", finding.vuln_id_from_tool)
+        self.assertEqual("\t\t\tjavax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");", finding.sast_source_code)
 
     def test_parse_repeated_finding(self):
         testfile = open("dojo/unittests/scans/semgrep/repeated_findings.json")
@@ -61,6 +64,7 @@ class TestSemgrepParser(TestCase):
         self.assertEqual(696, finding.cwe)
         self.assertEqual("javax crypto Cipher.getInstance(\"AES/GCM/NoPadding\");", finding.mitigation)
         self.assertEqual(2, finding.nb_occurences)
+        self.assertEqual("\t\t\tjavax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");", finding.sast_source_code)
 
     def test_parse_many_vulns(self):
         testfile = open("dojo/unittests/scans/semgrep/many_vulns.json")
@@ -74,20 +78,24 @@ class TestSemgrepParser(TestCase):
         self.assertEqual(186, finding.line)
         self.assertIsNone(finding.mitigation)
         self.assertEqual("python.lang.correctness.tempfile.flush.tempfile-without-flush", finding.vuln_id_from_tool)
+        self.assertEqual("                   'xsl-style-sheet': temp.name}", finding.sast_source_code)
         finding = findings[2]
         self.assertEqual("Low", finding.severity)
         self.assertEqual("utils.py", finding.file_path)
         self.assertEqual(503, finding.line)
         self.assertEqual("python.lang.maintainability.useless-ifelse.useless-if-conditional", finding.vuln_id_from_tool)
+        self.assertEqual("            elif f.mitigated is None and f.date <= end_of_period.date():\n                if f.severity == 'Critical':\n                    o_count['zero'] += 1\n                elif f.severity == 'High':\n                    o_count['one'] += 1\n                elif f.severity == 'Medium':\n                    o_count['two'] += 1\n                elif f.severity == 'Low':\n                    o_count['three'] += 1\n            elif f.mitigated is None and f.date <= end_of_period.date():\n                if f.severity == 'Critical':\n                    a_count['zero'] += 1\n                elif f.severity == 'High':\n                    a_count['one'] += 1\n                elif f.severity == 'Medium':\n                    a_count['two'] += 1\n                elif f.severity == 'Low':\n                    a_count['three'] += 1", finding.sast_source_code)
         finding = findings[4]
         self.assertEqual("Low", finding.severity)
         self.assertEqual("tools/sslyze/parser_xml.py", finding.file_path)
         self.assertEqual(124, finding.line)
         self.assertEqual(327, finding.cwe)
         self.assertEqual("python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-md5", finding.vuln_id_from_tool)
+        self.assertEqual("                    dupe_key = hashlib.md5(str(description + title).encode('utf-8')).hexdigest()", finding.sast_source_code)
         finding = findings[37]
         self.assertEqual("High", finding.severity)
         self.assertEqual("management/commands/csv_findings_export.py", finding.file_path)
         self.assertEqual(33, finding.line)
         self.assertEqual(1236, finding.cwe)
         self.assertEqual("python.lang.security.unquoted-csv-writer.unquoted-csv-writer", finding.vuln_id_from_tool)
+        self.assertEqual("        writer = csv.writer(open(file_path, 'w'))", finding.sast_source_code)

@@ -1736,6 +1736,12 @@ class Finding(models.Model):
                                              max_length=4000,
                                              verbose_name="SAST Source File Path",
                                              help_text="Source file path of the attack vector.")
+    sast_source_code = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="SAST Vulnerable Code Snippet",
+        help_text="Snippet of the source code scanned that is vulnerable"
+    )
     nb_occurences = models.IntegerField(null=True,
                                         blank=True,
                                         verbose_name="Number of occurences",

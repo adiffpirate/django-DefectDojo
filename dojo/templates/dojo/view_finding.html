@@ -831,6 +831,18 @@
             </div>
         </div>
 
+        {% if finding.sast_source_code %}
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>Code <span class="pull-right"><a data-toggle="collapse" href="#vuln_code"><i
+                            class="glyphicon glyphicon-chevron-{% if finding.sast_source_code %}up{%else%}down{%endif%}"></i></a></span></h4>
+                </div>
+                <div id="vuln_sast_source_code" class="panel-body collapse {% if finding.sast_source_code %}in{%endif%}">
+                    <pre>{{ finding.sast_source_code|markdown_render|default_if_none:"" }}</pre>
+                </div>
+            </div>
+        {% endif %}
+
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>Mitigation <span class="pull-right"><a data-toggle="collapse" href="#vuln_mitigation"><i
@@ -840,6 +852,7 @@
                 <pre>{{ finding.mitigation|markdown_render|default_if_none:"" }}</pre>
             </div>
         </div>
+
         {% if finding.burprawrequestresponse_set.all %}
             <div class="panel panel-default">
                 <div class="panel-heading">
