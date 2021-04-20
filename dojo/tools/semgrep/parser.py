@@ -52,6 +52,10 @@ class SemgrepParser(object):
                     "\n```\n",
                 ])
 
+            # manage code snippet extracted from source code
+            if 'lines' in item["extra"]:
+                finding.sast_source_code = item["extra"]["lines"]
+
             dupe_key = finding.title + finding.file_path + str(finding.line)
 
             if dupe_key in dupes:
