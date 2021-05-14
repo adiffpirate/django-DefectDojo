@@ -99,7 +99,6 @@ def get_severity(data):
     else:
         return 'Info'
 
-
 def get_message_from_multiformatMessageString(data, rule):
     """Get a message from multimessage struct
 
@@ -142,6 +141,7 @@ def get_item(result, rules, artifacts, run_date):
             file_path = location['physicalLocation']['artifactLocation']['uri']
             # 'region' attribute is optionnal
             if 'region' in location['physicalLocation']:
+                code_snippet = location['physicalLocaltion']['region']['snippet']['text']
                 line = location['physicalLocation']['region']['startLine']
 
     # test rule link
@@ -182,6 +182,7 @@ def get_item(result, rules, artifacts, run_date):
                     cve=cve_try(result['ruleId']),  # for now we only support when the id of the rule is a CVE
                     cwe=cwes[0],
                     static_finding=True,  # by definition
+                    sast_source_code=code_snippet,
                     dynamic_finding=False,  # by definition
                     file_path=file_path,
                     line=line)
