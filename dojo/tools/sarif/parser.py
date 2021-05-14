@@ -145,7 +145,7 @@ def get_item(result, tool, rules, artifacts, run_date):
             file_path = location['physicalLocation']['artifactLocation']['uri']
             # 'region' attribute is optionnal
             if 'region' in location['physicalLocation']:
-                code_snippet = location['physicalLocaltion']['region']['snippet']['text']
+                code_snippet = location['physicalLocation']['region']['snippet']['text']
                 line = location['physicalLocation']['region']['startLine']
 
     # test rule link
