@@ -33,13 +33,14 @@ class SarifParser(object):
         items = list()
         # for each runs
         for run in tree.get('runs', list()):
+            tool = get_tool(run)
             # load rules
             rules = get_rules(run)
             artifacts = get_artifacts(run)
             # get the timestamp of the run if possible
             run_date = self._get_last_invocation_date(run)
             for result in run.get('results', list()):
-                item = get_item(result, rules, artifacts, run_date)
+                item = get_item(result, tool, rules, artifacts, run_date)
                 items.append(item)
         return items
 
@@ -54,6 +55,9 @@ class SarifParser(object):
         # if the data is here we try to convert it to datetime
         return dateutil.parser.isoparse(raw_date)
 
+def get_tool(run):
+    tool = run['tool']['driver']['name']
+    return tool
 
 def get_rules(run):
     rules = {}
@@ -129,7 +133,7 @@ def cve_try(val):
         return None
 
 
-def get_item(result, rules, artifacts, run_date):
+def get_item(result, tool, rules, artifacts, run_date):
     mitigation = result.get('Remediation', {}).get('Recommendation', {}).get('Text', "")
     references = result.get('Remediation', {}).get('Recommendation', {}).get('Url')
 
@@ -173,6 +177,12 @@ def get_item(result, rules, artifacts, run_date):
         cwes_extracted = get_rule_cwes(rule)
         if len(cwes_extracted) > 0:
             cwes = cwes_extracted
+
+    # special case for njsscan
+    if tool == 'nodejsscan':
+        title = rule['name']
+        description = get_message_from_multiformatMessageString(result['message'], rule)
+        cwes[0] = re.search("\d+", result['properties']['cwe']).group(0)
 
     finding = Finding(title=textwrap.shorten(title, 150),
                     severity=severity,
