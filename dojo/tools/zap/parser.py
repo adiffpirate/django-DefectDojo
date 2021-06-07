@@ -87,7 +87,6 @@ class ZapParser(object):
                                mitigated=None,
                                impact=None,
                                numerical_severity=Finding.get_numerical_severity(severity))
-                               )
 
                 find.unsaved_endpoints = [main_host]
                 for i in item.items:
