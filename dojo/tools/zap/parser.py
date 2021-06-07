@@ -85,8 +85,9 @@ class ZapParser(object):
                                duplicate=False,
                                out_of_scope=False,
                                mitigated=None,
-                               impact="No impact provided",
+                               impact=None,
                                numerical_severity=Finding.get_numerical_severity(severity))
+                               )
 
                 find.unsaved_endpoints = [main_host]
                 for i in item.items:
@@ -193,19 +194,23 @@ class Item(object):
 
         description_detail = "\n"
         for instance in item_node.findall('instances/instance'):
+            description_detail += "\n---\n"
             for node in instance.iter():
                 if node.tag == "uri":
                     if node.text != "":
-                        description_detail += "URL: " + node.text
+                        description_detail += "**URL:** " + node.text
                 if node.tag == "method":
                     if node.text != "":
-                        description_detail += "Method: " + node.text
+                        description_detail += "**Method:** " + node.text
                 if node.tag == "param":
                     if node.text != "":
-                        description_detail += "Parameter: " + node.text
+                        description_detail += "**Parameter:** " + node.text
                 if node.tag == "evidence":
                     if node.text != "":
-                        description_detail += "Evidence: " + escape(node.text)
+                        description_detail += "**Evidence:** " + escape(node.text)
+                if node.tag == "attack":
+                    if node.text != "":
+                        description_detail += "**Attack:** " + escape(node.text)
                 description_detail += "\n"
 
         self.desc += description_detail
