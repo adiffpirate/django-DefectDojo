@@ -50,7 +50,7 @@ class ZapParser(object):
                                duplicate=False,
                                out_of_scope=False,
                                mitigated=None,
-                               impact=None,
+                               impact=None
                                )
 
                 find.unsaved_endpoints = [main_host]
