@@ -64,10 +64,11 @@ def do_replicate_false_positive(new_finding, *args, **kwargs):
     #      ) and test_type
     #      and hash_code
     #    as the new one and also are a false positive
-    #    from other products
+    #    from others (products if dedup_within_engagement is false else engagements)
     #    (this is "cond1")
     # ---------------------------------------------------------
 
+    # Get false positives with the same CWE as the new_finding
     prodtype_findings_cwe = (
         Finding.objects.filter(
             test__engagement__product__prod_type=new_finding.test.engagement.product.prod_type,
@@ -78,10 +79,10 @@ def do_replicate_false_positive(new_finding, *args, **kwargs):
         ).exclude(id=new_finding.id)
         .exclude(cwe=0)
         .exclude(duplicate=True)
-        .exclude(test__engagement__product=new_finding.test.engagement.product)
         .values('id')
     )
 
+    # Get false positives with the same title as the new_finding
     prodtype_findings_title = (
         Finding.objects.filter(
             test__engagement__product__prod_type=new_finding.test.engagement.product.prod_type,
@@ -91,10 +92,21 @@ def do_replicate_false_positive(new_finding, *args, **kwargs):
             title=new_finding.title
         ).exclude(id=new_finding.id)
         .exclude(duplicate=True)
-        .exclude(test__engagement__product=new_finding.test.engagement.product)
         .values('id')
     )
 
+    # If deduplication is active on a product level
+    if new_finding.test.engagement.deduplication_on_engagement is False:
+        # Removes false positives from the same product as the new_finding
+        prodtype_findings_cwe.exclude(test__engagement__product=new_finding.test.engagement.product)
+        prodtype_findings_title.exclude(test__engagement__product=new_finding.test.engagement.product)
+    else: # Deduplication happens within engagement
+        # Removes false positives from the same engagement as the new_finding
+        prodtype_findings_cwe.exclude(test__engagement=new_finding.test.engagement)
+        prodtype_findings_title.exclude(test__engagement=new_finding.test.engagement)
+
+
+    # Union 'same CWE' and 'same title'
     total_findings = (
         Finding.objects.filter(
             Q(id__in=prodtype_findings_cwe) | Q(id__in=prodtype_findings_title)
