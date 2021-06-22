@@ -83,6 +83,12 @@ def get_item(vuln, test, check_type):
     # vulnerabilities, we set them to Medium
     severity = 'Medium'
 
+    code_snippet = ''
+    for line in vuln['code_block']:
+        line_number = str(line[0]).rjust(5)
+        line_code = line[1]
+        code_snippet += line_number + ':  ' + line_code
+
     mitigation = ''
 
     references = ''
@@ -99,6 +105,7 @@ def get_item(vuln, test, check_type):
                       line=source_line,
                       component_name=resource,
                       static_finding=True,
+                      sast_source_code=code_snippet,
                       dynamic_finding=False)
 
     return finding

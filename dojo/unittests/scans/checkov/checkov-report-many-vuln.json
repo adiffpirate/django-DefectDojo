@@ -11,6 +11,18 @@
                     "result": "FAILED"
                 },
                 "code_block": [
+                    [
+                        1,
+                        "lorem ipsum {\n"
+                    ],
+                    [
+                        2,
+                        "  lorem = ipsum\n"
+                    ],
+                    [
+                        3,
+                        "}\n"
+                    ]
                 ],
                 "file_path": "file_path",
                 "file_line_range": [
