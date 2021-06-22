@@ -22,6 +22,7 @@ class TestCheckovParser(TestCase):
         parser = CheckovParser()
         findings = parser.get_findings(testfile, Test())
         self.assertTrue(len(findings) > 2)
+        self.assertEqual('    1:  lorem ipsum {\n    2:    lorem = ipsum\n    3:  }\n', findings[0].sast_source_code)
 
     def test_parse_file_with_multiple_check_type_has_multiple_check_type(self):
         testfile = open("dojo/unittests/scans/checkov/checkov-multiple-check_type.json")
