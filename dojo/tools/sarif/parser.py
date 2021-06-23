@@ -184,7 +184,7 @@ def get_item(result, tool, rules, artifacts, run_date):
     if tool == 'nodejsscan':
         title = rule['name']
         description = get_message_from_multiformatMessageString(result['message'], rule)
-        cwes[0] = re.search("\d+", result['properties']['cwe']).group(0)
+        cwes[0] = int(re.search("\d+", result['properties']['cwe']).group(0))
 
     finding = Finding(title=textwrap.shorten(title, 150),
                     severity=severity,
