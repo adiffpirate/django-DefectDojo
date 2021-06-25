@@ -83,11 +83,12 @@ def get_item(vuln, test, check_type):
     # vulnerabilities, we set them to Medium
     severity = 'Medium'
 
-    code_snippet = ''
+    code_snippet = '```\n'
     for line in vuln['code_block']:
         line_number = str(line[0]).rjust(5)
         line_code = line[1]
         code_snippet += line_number + ':  ' + line_code
+    code_snippet += '```'
 
     mitigation = ''
 
