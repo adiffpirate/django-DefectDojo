@@ -389,8 +389,9 @@
                         <a href="{{ engagement_url }}">{{ finding.test.engagement.name }}</a>
                     </td>
                     <td>
-                        {% url 'view_test' finding.test.id as test_url %}
-                        <a href="{{ test_url }}">{{ finding.test.test_type_name }}</a>
+                        <a title="Test: {{ finding.test }}" href="{% url 'view_test' finding.test.id %}">
+                            {{ finding.test }}
+                        </a>
                     </td>
                     <td>{{ finding.date }}</td>
                     {% if not finding.mitigated %}

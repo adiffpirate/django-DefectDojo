@@ -399,7 +399,7 @@
                                   {% endif %}
                                 </td>
                                 <td>
-                                  <a target="#" data-toggle="tooltip" data-placement="bottom" title="Test: {{ finding.test }}">{{ finding.found_by.all|join:", " }}</a>
+                                    <a target="#" data-toggle="tooltip" data-placement="bottom" title="Test: {{ finding.test }}" href="{% url 'view_test' finding.test.id %}">{{ finding.test }}</a>
                                 </td>
                                 <td class="nowrap">{{ finding|finding_display_status|safe }}&nbsp;{{ finding|import_history }}
                                 </td>

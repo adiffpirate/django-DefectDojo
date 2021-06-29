@@ -1296,7 +1296,7 @@ class Test(models.Model):
 
     def __str__(self):
         if self.title:
-            return "%s (%s)" % (self.title, self.test_type)
+            return str(self.title)
         return str(self.test_type)
 
     def get_breadcrumbs(self):
