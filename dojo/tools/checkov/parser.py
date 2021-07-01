@@ -93,11 +93,12 @@ def get_item(vuln, test, check_type):
     severity = 'Medium'
     numerical_severity = Finding.get_numerical_severity(severity)
 
-    code_snippet = ''
+    code_snippet = '```\n'
     for line in vuln['code_block']:
         line_number = str(line[0]).rjust(5)
         line_code = line[1]
         code_snippet += line_number + ':  ' + line_code
+    code_snippet += '```'
 
     mitigation = ''
 
