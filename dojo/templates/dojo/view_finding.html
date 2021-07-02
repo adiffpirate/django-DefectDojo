@@ -235,7 +235,6 @@
                     <th>Type</th>
                     <th>CWE</th>
                     <th>CVE</th>
-                    <th>Reporter</th>
                     {% if finding.publish_date %}
                         <th>Vuln Publish date</th>
                     {% endif %}
@@ -380,7 +379,6 @@
                              {{ finding.cve }}
                          </td>
                     {% endif %}
-                    <td>{{ finding.reporter }}</td>
                     {% if finding.publish_date %}
                         <td>{{ finding.publish_date }}</td>
                     {% endif %}
