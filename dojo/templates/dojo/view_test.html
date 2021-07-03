@@ -617,7 +617,6 @@
                             {% if system_settings.enable_finding_sla %}
                             <th>SLA</th>
                             {% endif %}
-                            <th>Reporter</th>
                             <th>Status</th>
                             {% if system_settings.enable_jira %}
                                 {% if jira_project and product_tab or not product_tab %}
@@ -823,13 +822,6 @@
                           {{ finding|finding_sla }}
                         </td>
                         {% endif %}
-                        <td>
-                          {% if finding.reporter.get_full_name and finding.reporter.get_full_name.strip %}
-                              {{ finding.reporter.get_full_name }}
-                          {% else %}
-                              {{ finding.reporter }}
-                          {% endif %}
-                        </td>
                         <td class="nowrap">{{ finding|finding_display_status|safe }}&nbsp;{{ finding|import_history }}
                         </td>
                         {% if system_settings.enable_jira %}
@@ -916,7 +908,6 @@
                 <tr>
                     <th>Name</th>
                     <th>Severity</th>
-                    <th>Reporter</th>
                     <th>Date</th>
                     <th>Actions</th>
                 </tr>
@@ -933,13 +924,6 @@
                         <td>{% if finding.severity == "Critical" or finding.severity == "High" %}
                             <span class="text-error">
                         {% else %}<span>{% endif %}{{ finding.severity }}</span></td>
-                        <td>
-                          {% if finding.reporter.get_full_name and finding.reporter.get_full_name.strip %}
-                              {{ finding.reporter.get_full_name }}
-                          {% else %}
-                              {{ finding.reporter }}
-                          {% endif %}
-                        </td>
                         <td>{{ finding.date }}</td>
                         <td>
                             {% if test|has_object_permission:"Finding_Edit" or user|is_authorized_for_change:test %}
