@@ -175,11 +175,11 @@
                             {% else %}
                             <th class="nowrap">{% dojo_sort request 'Date' 'date'%}</th>
                             {% endif %}
-                            <th class="nowrap">Age</th>
                             {% if system_settings.enable_finding_sla %}
                             <th>SLA</th>
                             {% endif %}
-                            <th>Found By</th>
+                            <th class="nowrap centered">Found at</th>
+                            <th class="nowrap centered">Found by</th>
                             <th>Status</th>
                             {% if system_settings.enable_jira %}
                               {% if jira_project and product_tab or not product_tab %}
@@ -391,10 +391,13 @@
                                 {% else %}
                                   <td class="nowrap">{{ finding.date }}</td>
                                 {% endif %}
-                                <td>{{ finding.age }}</td>
                                 {% if system_settings.enable_finding_sla %}
                                 <td>
                                   {{ finding|finding_sla }}
+                                </td>
+                                <td class="centered">
+                                    {% url 'view_engagement' finding.test.engagement.id as engagement_url %}
+                                    <a href="{{ engagement_url }}">{{ finding.test.engagement.name }}</a>
                                 </td>
                                 {% endif %}
                                 <td>
