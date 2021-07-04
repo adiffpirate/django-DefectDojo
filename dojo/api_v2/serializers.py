@@ -1141,13 +1141,6 @@ class ImportScanSerializer(serializers.Serializer):
                         Finding.SEVERITIES[data['minimum_severity']]):
                     continue
 
-                item.test = test
-                item.reporter = self.context['request'].user
-                item.last_reviewed = timezone.now()
-                item.last_reviewed_by = self.context['request'].user
-                item.active = data['active']
-                item.verified = data['verified']
-
                 if skip_duplicates:
                     from dojo.utils import do_dedupe_finding
                     item.hash_code = item.compute_hash_code()
@@ -1162,6 +1155,12 @@ class ImportScanSerializer(serializers.Serializer):
                         skipped_hashcodes.append(item.hash_code)
                         continue
 
+                item.test = test
+                item.reporter = self.context['request'].user
+                item.last_reviewed = timezone.now()
+                item.last_reviewed_by = self.context['request'].user
+                item.active = data['active']
+                item.verified = data['verified']
                 logger.debug('going to save finding')
                 item.save(dedupe_option=False)
 
