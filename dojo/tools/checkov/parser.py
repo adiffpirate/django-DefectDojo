@@ -15,41 +15,39 @@ class CheckovParser(object):
         return "Import JSON reports of Infrastructure as Code vulnerabilities."
 
     def get_findings(self, json_output, test):
-
-        if json_output is None:
-            return list()
-
-        report = self.parse_json(json_output)
-
-        # Turn reports with only one check_type in a list, that way we can use
-        # only the 'for' below instead of two ifs. This avoids code duplication.
-        if type(report) is not list:
-            tmp = list()
-            tmp.append(report)
-            report = tmp
-
         findings = list()
-        for tree in report:
-            check_type = ''
-            if 'check_type' in tree:
+        if json_output:
+            deserialized = self.parse_json(json_output)
+            for tree in deserialized:
                 check_type = tree['check_type']
-
-            if tree:
                 findings += self.get_items(tree, test, check_type)
 
         return findings
 
     def parse_json(self, json_output):
+        """Parse JSON report.
+        Checkov may return only one `check_type` (where the report is just a JSON)
+        or more (where the report is an array of JSONs).
+        To address all scenarios we force this method to return a list of JSON objects.
+
+        :param json_output: JSON report
+        :type json_output: file
+        :return: JSON array of objects
+        :rtype: list
+        """
         try:
             data = json_output.read()
             try:
-                tree = json.loads(str(data, 'utf-8'))
+                deserialized = json.loads(str(data, 'utf-8'))
             except:
-                tree = json.loads(data)
+                deserialized = json.loads(data)
         except:
             raise Exception("Invalid format")
 
-        return tree
+        if type(deserialized) is not list:
+            return [deserialized]
+        else:
+            return deserialized
 
     def get_items(self, tree, test, check_type):
         items = []
@@ -91,7 +89,6 @@ def get_item(vuln, test, check_type):
     # Checkov doesn't define severities. Sine the findings are
     # vulnerabilities, we set them to Medium
     severity = 'Medium'
-    numerical_severity = Finding.get_numerical_severity(severity)
 
     code_snippet = '```\n'
     for line in vuln['code_block']:
@@ -108,11 +105,8 @@ def get_item(vuln, test, check_type):
 
     finding = Finding(title=title,
                       test=test,
-                      active=False,
-                      verified=False,
                       description=description,
                       severity=severity,
-                      numerical_severity=numerical_severity,
                       mitigation=mitigation,
                       references=references,
                       file_path=file_path,

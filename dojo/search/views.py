@@ -4,7 +4,7 @@ from django.shortcuts import render
 from watson import search as watson
 from django.db.models import Q
 from dojo.forms import SimpleSearchForm
-from dojo.models import Finding, Finding_Template, Product, Test, Endpoint, Engagement, Languages, \
+from dojo.models import Finding, Finding_Template, Product, Test, Engagement, Languages, \
     App_Analysis
 from dojo.utils import add_breadcrumb, get_page_items, get_words_for_field
 import re
@@ -17,6 +17,8 @@ import itertools
 from dojo.product.queries import get_authorized_products
 from dojo.engagement.queries import get_authorized_engagements
 from dojo.test.queries import get_authorized_tests
+from dojo.finding.queries import get_authorized_findings
+from dojo.endpoint.queries import get_authorized_endpoints
 from dojo.authorization.roles_permissions import Permissions
 
 logger = logging.getLogger(__name__)
@@ -68,8 +70,10 @@ def simple_search(request):
 
             operators, keywords = parse_search_query(clean_query)
 
-            search_tags = "tag" in operators or "test-tag" in operators or "engagement-tag" in operators or "product-tag" in operators or\
-                          "tags" in operators or "test-tags" in operators or "engagement-tags" in operators or "product-tags" in operators
+            search_tags = "tag" in operators or "test-tag" in operators or "engagement-tag" in operators or "product-tag" in operators or \
+                          "tags" in operators or "test-tags" in operators or "engagement-tags" in operators or "product-tags" in operators or \
+                          "not-tag" in operators or "not-test-tag" in operators or "not-engagement-tag" in operators or "not-product-tag" in operators or \
+                          "not-tags" in operators or "not-test-tags" in operators or "not-engagement-tags" in operators or "not-product-tags" in operators
 
             search_cve = "cve" in operators
 
@@ -85,17 +89,12 @@ def simple_search(request):
             search_languages = "language" in operators or search_tags or not (operators or search_finding_id or search_cve)
             search_technologies = "technology" in operators or search_tags or not (operators or search_finding_id or search_cve)
 
-            authorized_findings = Finding.objects.all()
+            authorized_findings = get_authorized_findings(Permissions.Finding_View)
             authorized_tests = get_authorized_tests(Permissions.Test_View)
             authorized_engagements = get_authorized_engagements(Permissions.Engagement_View)
             authorized_products = get_authorized_products(Permissions.Product_View)
-            authorized_endpoints = Endpoint.objects.all()
+            authorized_endpoints = get_authorized_endpoints(Permissions.Endpoint_View)
             authorized_finding_templates = Finding_Template.objects.all()
-
-            if not request.user.is_staff:
-                authorized_findings = authorized_findings.filter(Q(test__engagement__product__authorized_users__in=[request.user]) | Q(test__engagement__product__prod_type__authorized_users__in=[request.user]))
-                authorized_endpoints = authorized_endpoints.filter(Q(product__authorized_users__in=[request.user]) | Q(product__prod_type__authorized_users__in=[request.user]))
-                # can't filter templates
 
             # TODO better get findings in their own query and match on id. that would allow filtering on additional fields such cve, prod_id, etc.
 
@@ -124,8 +123,8 @@ def simple_search(request):
                 # setting initial values for filters is not supported and discouraged: https://django-filter.readthedocs.io/en/stable/guide/tips.html#using-initial-values-as-defaults
                 # we could try to modify request.GET before generating the filter, but for now we'll leave it as is
 
-                title_words = get_words_for_field(authorized_findings, 'title')
-                component_words = get_words_for_field(authorized_findings, 'component_name')
+                title_words = get_words_for_field(Finding, 'title')
+                component_words = get_words_for_field(Finding, 'component_name')
 
                 findings = findings_filter.qs
 
@@ -153,10 +152,12 @@ def simple_search(request):
 
             tag = operators['tag'] if 'tag' in operators else keywords
             tags = operators['tags'] if 'tags' in operators else keywords
-            if search_tags and tag or tags:
+            not_tag = operators['not-tag'] if 'not-tag' in operators else keywords
+            not_tags = operators['not-tags'] if 'not-tags' in operators else keywords
+            if search_tags and tag or tags or not_tag or not_tags:
                 logger.debug('searching tags')
 
-                Q1, Q2 = Q(), Q()
+                Q1, Q2, Q3, Q4 = Q(), Q(), Q(), Q()
 
                 if tag:
                     tag = ','.join(tag)  # contains needs a single value
@@ -165,12 +166,19 @@ def simple_search(request):
                 if tags:
                     Q2 = Q(tags__name__in=tags)
 
-                tagged_findings = authorized_findings.filter(Q1 | Q2).distinct()[:max_results].prefetch_related('tags')
-                tagged_finding_templates = authorized_finding_templates.filter(Q1 | Q2).distinct()[:max_results]
-                tagged_tests = authorized_tests.filter(Q1 | Q2).distinct()[:max_results].prefetch_related('tags')
-                tagged_engagements = authorized_engagements.filter(Q1 | Q2).distinct()[:max_results].prefetch_related('tags')
-                tagged_products = authorized_products.filter(Q1 | Q2).distinct()[:max_results].prefetch_related('tags')
-                tagged_endpoints = authorized_endpoints.filter(Q1 | Q2).distinct()[:max_results].prefetch_related('tags')
+                if not_tag:
+                    not_tag = ','.join(not_tag)  # contains needs a single value
+                    Q3 = Q(tags__name__contains=not_tag)
+
+                if not_tags:
+                    Q4 = Q(tags__name__in=not_tags)
+
+                tagged_findings = authorized_findings.filter(Q1 | Q2).exclude(Q3 | Q4).distinct()[:max_results].prefetch_related('tags')
+                tagged_finding_templates = authorized_finding_templates.filter(Q1 | Q2).exclude(Q3 | Q4).distinct()[:max_results]
+                tagged_tests = authorized_tests.filter(Q1 | Q2).exclude(Q3 | Q4).distinct()[:max_results].prefetch_related('tags')
+                tagged_engagements = authorized_engagements.filter(Q1 | Q2).exclude(Q3 | Q4).distinct()[:max_results].prefetch_related('tags')
+                tagged_products = authorized_products.filter(Q1 | Q2).exclude(Q3 | Q4).distinct()[:max_results].prefetch_related('tags')
+                tagged_endpoints = authorized_endpoints.filter(Q1 | Q2).exclude(Q3 | Q4).distinct()[:max_results].prefetch_related('tags')
             else:
                 tagged_findings = None
                 tagged_finding_templates = None
@@ -246,7 +254,7 @@ def simple_search(request):
                 endpoints = authorized_endpoints
                 endpoints = apply_tag_filters(endpoints, operators)
 
-                endpoints = endpoints.filter(Q(host__icontains=keywords_query) | Q(path__icontains=keywords_query) | Q(fqdn__icontains=keywords_query) | Q(protocol__icontains=keywords_query))
+                endpoints = endpoints.filter(Q(host__icontains=keywords_query) | Q(path__icontains=keywords_query) | Q(protocol__icontains=keywords_query) | Q(query__icontains=keywords_query) | Q(fragment__icontains=keywords_query))
                 endpoints = prefetch_for_endpoints(endpoints)
                 endpoints = endpoints[:max_results]
             else:
@@ -270,7 +278,7 @@ def simple_search(request):
                 app_analysis = None
 
             # make sure watson only searches in authorized model instances
-            if keywords_query and False:
+            if keywords_query:
                 logger.debug('searching generic')
                 logger.debug('going generic with: %s', keywords_query)
                 generic = watson.search(keywords_query, models=(
@@ -476,6 +484,21 @@ def apply_tag_filters(qs, operators, skip_relations=False):
         if tag_filter + 's' in operators:
             value = operators[tag_filter + 's']
             qs = qs.filter(**{'%stags__name__in' % tag_filters[tag_filter]: value})
+
+    # negative search based on not- prefix (not-tags, not-test-tags, not-engagement-tags, not-product-tags, etc)
+
+    for tag_filter in tag_filters:
+        tag_filter = 'not-' + tag_filter
+        if tag_filter in operators:
+            value = operators[tag_filter]
+            value = ','.join(value)  # contains needs a single value
+            qs = qs.exclude(**{'%stags__name__contains' % tag_filters[tag_filter.replace('not-', '')]: value})
+
+    for tag_filter in tag_filters:
+        tag_filter = 'not-' + tag_filter
+        if tag_filter + 's' in operators:
+            value = operators[tag_filter + 's']
+            qs = qs.exclude(**{'%stags__name__in' % tag_filters[tag_filter.replace('not-', '')]: value})
 
     return qs
 

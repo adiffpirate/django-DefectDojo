@@ -1,18 +1,22 @@
 {% extends "base.html" %}
 {% load display_tags %}
+{% load authorization_tags %}
 {% load humanize %}
 {% load static %}
 {% load get_endpoint_status %}
 {% block add_styles %}
+    {{ block.super }}
   .tooltip-inner {
     max-width: 650px;
   }
 {% endblock %}
 {% block add_css_before %}
+    {{ block.super }}
 <!-- Source Code Highlight CSS -->
 <link rel="stylesheet" href="{% static "dojo/css/highlight.css" %}">
 {% endblock %}
 {% block content %}
+    {{ block.super }}
 <div id="test">
     <div class="panel panel-default">
         <div class="panel-heading">
@@ -50,14 +54,14 @@
                             <span class="caret"></span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1">
-                            {% if user|is_authorized_for_change:finding %}
+                            {% if user|is_authorized_for_change:finding or finding|has_object_permission:"Finding_Edit" %}
                                 <li role="presentation">
                                     <a href="{% url 'edit_finding' finding.id %}">
                                         <i class="fa fa-pencil-square-o"></i> Edit Finding
                                     </a>
                                 </li>
                             {% endif %}
-                            {% if user|is_authorized_for_staff:finding %}
+                            {% if user|is_authorized_for_staff:finding or finding|has_object_permission:"Finding_Edit" %}
                                 <li role="presentation">
                                     <a href="{% url 'manage_images' finding.id %}">
                                         <i class="fa fa-file-image-o"></i> Manage Images
@@ -83,7 +87,7 @@
                                     </li>
                                 {% endif %}
                             {% endif %}
-                            {% if user|is_authorized_for_change:finding %}
+                            {% if user|is_authorized_for_change:finding or finding|has_object_permission:"Finding_Edit" %}
                                 <li role="presentation">
                                     <a href="{% url 'touch_finding' finding.id %}">
                                         <i class="fa fa-clock-o"></i> Touch Finding
@@ -121,7 +125,7 @@
                                 </li>
                                 <li role="separator" class="divider"></li>
                             {% endif %}
-                            {% if user|is_authorized_for_change:finding %}
+                            {% if user|is_authorized_for_change:finding or finding|has_object_permission:"Finding_Edit" %}
                                 {% if finding.mitigated %}
                                     <li role="presentation">
                                         <a href="{% url 'reopen_finding' finding.id %}">
@@ -136,7 +140,7 @@
                                 </li>
                                 {% endif %}
                             {% endif %}
-                            {% if user|is_authorized_for_change:finding %}
+                            {% if user|is_authorized_for_change:finding or finding|has_object_permission:"Risk_Acceptance" %}
                                 {% if finding.risk_accepted %}
                                     <li role="presentation">
                                     <a href="{% url 'risk_unaccept_finding' finding.id %}?return_url={{ request.get_full_path|urlencode }}">
@@ -165,7 +169,7 @@
                                     <i class="fa fa-history"></i> View History
                                 </a>
                             </li>
-                            {% if user|is_authorized_for_delete:finding %}
+                            {% if user|is_authorized_for_delete:finding or finding|has_object_permission:"Finding_Delete" %}
                                 <li role="separator" class="divider"></li>
                                 <li role="presentation">
                                     <a class="text-danger delete-finding" href="#">
@@ -253,14 +257,14 @@
                     {% endif %}
                 </tr>
                 <tr>
-                    <td>{{ finding.id }}</td>
+                    <td title="hash_code: {{ finding.hash_code }}">{{ finding.id }}</td>
                     <td>
                         <span class="label severity severity-{{ finding.severity }}">
                             {% if finding.severity %}
                                 {% if finding.cvssv3 %}
                                     <i class="no-italics has-popover" font-style="normal" data-toggle="tooltip" data-placement="bottom" data-container="body" title="" href="#"
                                         data-content="{{ finding.cvssv3 }}">
-                                {% endif %}        
+                                {% endif %}
                                 {{ finding.severity_display }}
                                 {% if finding.cvssv3_score %}
                                     ({{ finding.cvssv3_score }})
@@ -926,7 +930,7 @@
         </div>
 
         <!--Cred Begin-->
-        {% if  finding.static_finding != True and cred_finding %}
+        {% if  finding.static_finding != True and cred_finding and system_settings.enable_credentials %}
             <div class="row">
                 <div class="col-md-12" id="cred">
                     <div class="panel panel-default">
@@ -1047,6 +1051,7 @@
     </div>
 {% endblock %}
 {% block postscript %}
+    {{ block.super }}
     <script src="{% static "clipboard/dist/clipboard.min.js" %}"></script>
     <script type="application/javascript" src="{% static "jquery.hotkeys/jquery.hotkeys.js" %}"></script>
     <script type="text/javascript" src="{% static "jquery-highlight/jquery.highlight.js" %}"></script>
