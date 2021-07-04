@@ -240,8 +240,6 @@ class DependencyCheckParser(object):
 
         mitigation = 'Update ' + component_name + ':' + component_version + ' to at least the version recommended in the description'
 
-        mitigation = 'Update ' + component_name + '-' + component_version + ' to at least the version recommended in the description'
-
         return Finding(
             title=title,
             file_path=dependency_filename,
