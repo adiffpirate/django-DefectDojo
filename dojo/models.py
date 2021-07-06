@@ -703,6 +703,9 @@ class Product(models.Model):
 
     enable_simple_risk_acceptance = models.BooleanField(default=False, help_text=_('Allows simple risk acceptance by checking/unchecking a checkbox.'))
     enable_full_risk_acceptance = models.BooleanField(default=True, help_text=_('Allows full risk acceptance using a risk acceptance form, expiration date, uploaded proof, etc.'))
+    risk_acceptance = models.ManyToManyField(
+        "Risk_Acceptance", default=None, editable=False, blank=True
+    )
 
     def __str__(self):
         return self.name

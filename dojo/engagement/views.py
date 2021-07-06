@@ -794,6 +794,8 @@ def add_risk_acceptance(request, eid, fid=None):
                 risk_acceptance.notes.add(notes)
 
             eng.risk_acceptance.add(risk_acceptance)
+            if settings.PRODUCT_WIDE_RISK_ACCEPTANCE:
+                eng.product.risk_acceptance.add(risk_acceptance)
 
             findings = form.cleaned_data['accepted_findings']
 
