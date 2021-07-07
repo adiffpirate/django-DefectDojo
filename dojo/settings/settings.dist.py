@@ -168,6 +168,8 @@ env = environ.Env(
     DD_EDITABLE_MITIGATED_DATA=(bool, False),
     # new experimental feature that tracks history across multiple reimports for the same test
     DD_TRACK_IMPORT_HISTORY=(bool, False),
+    # new experimental feature that replicates false positives across product (useful with deduplication_on_engagement)
+    DD_REPLICATE_FALSE_POSITIVE=(bool, False),
 
     # Feature toggle for new authorization, which is incomplete at the moment.
     # Don't set it to True for productive environments!
@@ -896,6 +898,8 @@ DUPE_DELETE_MAX_PER_RUN = env('DD_DUPE_DELETE_MAX_PER_RUN')
 DISABLE_FINDING_MERGE = env('DD_DISABLE_FINDING_MERGE')
 
 TRACK_IMPORT_HISTORY = env('DD_TRACK_IMPORT_HISTORY')
+
+REPLICATE_FALSE_POSITIVE = env('DD_REPLICATE_FALSE_POSITIVE')
 
 # ------------------------------------------------------------------------------
 # JIRA

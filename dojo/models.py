@@ -136,13 +136,6 @@ class System_Settings(models.Model):
                                               "number of duplicates, the "
                                               "oldest will be deleted. Duplicate will not be deleted when left empty. A value of 0 will remove all duplicates.")
 
-    replicate_false_positive_across_product_type = models.BooleanField(
-        default=False,
-        help_text='Automatically mark the finding as false positive '
-                  'if the finding was marked as false positive in '
-                  'another product from the same product type.'
-    )
-
     enable_jira = models.BooleanField(default=False,
                                       verbose_name='Enable JIRA integration',
                                       blank=False)
