@@ -165,7 +165,7 @@ env = environ.Env(
     # new experimental feature that tracks history across multiple reimports for the same test
     DD_TRACK_IMPORT_HISTORY=(bool, True),
     # new experimental feature that implements risk acceptance across product (useful with deduplication within engagement)
-    DD_PRODUCT_WIDE_RISK_ACCEPTANCE=(bool, False),
+    DD_PRODUCT_WIDE_RISK_ACCEPTANCE=(bool, True),
 
     # Feature toggle for new authorization, which is incomplete at the moment.
     # Don't set it to True for productive environments!
