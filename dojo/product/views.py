@@ -164,6 +164,10 @@ def view_product(request, pid):
                                            out_of_scope=False).order_by('numerical_severity').values(
         'severity').annotate(count=Count('severity'))
 
+    risks_accepted = prod.risk_acceptance.all().select_related('owner').annotate(
+        accepted_findings_count=Count('accepted_findings__id')
+    )
+
     critical = 0
     high = 0
     medium = 0
@@ -206,7 +210,9 @@ def view_product(request, pid):
         'product_type_members': product_type_members,
         'product_groups': product_groups,
         'product_type_groups': product_type_groups,
-        'personal_notifications_form': personal_notifications_form})
+        'personal_notifications_form': personal_notifications_form,
+        'risks_accepted': risks_accepted
+    })
 
 
 @user_is_authorized(Product, Permissions.Component_View, 'pid', 'view')
