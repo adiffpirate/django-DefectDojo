@@ -286,6 +286,9 @@ def post_process_finding_save(finding, dedupe_option=True, false_history=False, 
     else:
         deduplicationLogger.debug("skipping false positive replication because it's disabled in system settings")
 
+    if settings.RISK_ACCEPTANCE_REPLICATION:
+        from dojo.utils import do_risk_acceptance_replication
+        do_risk_acceptance_replication(finding, *args, **kwargs)
 
     # STEP 2 run all non-status changing tasks as celery tasks in the background
     if issue_updater_option:

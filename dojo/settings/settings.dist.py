@@ -166,6 +166,8 @@ env = environ.Env(
     DD_TRACK_IMPORT_HISTORY=(bool, True),
     # new experimental feature that implements risk acceptance across product (useful with deduplication within engagement)
     DD_PRODUCT_WIDE_RISK_ACCEPTANCE=(bool, True),
+    # new experimental feature that replicates accepted risks across product (when using eng dedup)
+    DD_RISK_ACCEPTANCE_REPLICATION=(bool, False),
 
     # Feature toggle for new authorization, which is incomplete at the moment.
     # Don't set it to True for productive environments!
@@ -1056,7 +1058,11 @@ DISABLE_FINDING_MERGE = env('DD_DISABLE_FINDING_MERGE')
 
 TRACK_IMPORT_HISTORY = env('DD_TRACK_IMPORT_HISTORY')
 
+<<<<<<< HEAD
 PRODUCT_WIDE_RISK_ACCEPTANCE = env('DD_PRODUCT_WIDE_RISK_ACCEPTANCE')
+=======
+RISK_ACCEPTANCE_REPLICATION = env('DD_RISK_ACCEPTANCE_REPLICATION')
+>>>>>>> risk-acceptance-replication
 
 # ------------------------------------------------------------------------------
 # JIRA

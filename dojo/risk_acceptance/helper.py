@@ -7,7 +7,8 @@ from dojo.jira_link.helper import escape_for_jira
 from dojo.notifications.helper import create_notification
 from django.urls import reverse
 from dojo.celery import app
-from dojo.models import System_Settings, Risk_Acceptance
+from dojo.models import System_Settings, Risk_Acceptance, Finding
+from django.conf import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,11 +31,30 @@ def expire_now(risk_acceptance):
                 finding.save(dedupe_option=False)
                 reactivated_findings.append(finding)
                 # findings remain in this risk acceptance for reporting / metrics purposes
+
+                if settings.RISK_ACCEPTANCE_REPLICATION:
+                    logger.debug('Reactivating replicated findings')
+                    replicated_findings = Finding.objects.filter(
+                        test__engagement__product=finding.test.engagement.product,
+                        test__test_type=finding.test.test_type,
+                        hash_code=finding.hash_code,
+                        risk_accepted=True,
+                        duplicate=True
+                    ).exclude(id=finding.id).exclude(test__engagement=finding.test.engagement)
+
+                    for replica in replicated_findings:
+                        logger.debug('%i:%s: unaccepting a.k.a reactivating replicated finding.', replica.id, replica)
+                        replica.active = True
+                        replica.risk_accepted = False
+                        replica.duplicate = False
+                        replica.duplicate_finding = None
+                        replica.save(dedupe_option=False)
             else:
                 logger.debug('%i:%s already active, no changes made.', finding.id, finding)
 
         # best effort JIRA integration, no status changes
         post_jira_comments(risk_acceptance, risk_acceptance.accepted_findings.all(), expiration_message_creator)
+
 
     risk_acceptance.expiration_date = timezone.now()
     risk_acceptance.expiration_date_handled = timezone.now()
@@ -65,6 +85,16 @@ def reinstate(risk_acceptance, old_expiration_date):
                 finding.risk_accepted = True
                 finding.save(dedupe_option=False)
                 reinstated_findings.append(finding)
+
+                if settings.RISK_ACCEPTANCE_REPLICATION:
+                    logger.debug('Replicating %i:%s', finding.id, finding)
+                    same_test_type_findings = Finding.objects.filter(
+                        test__engagement__product=finding.test.engagement.product,
+                        test__test_type=finding.test.test_type
+                    ).exclude(id=finding.id).exclude(duplicate=True).exclude(test__engagement=finding.test.engagement)
+                    from dojo.utils import do_risk_acceptance_replication
+                    for find in same_test_type_findings:
+                        do_risk_acceptance_replication(find)
             else:
                 logger.debug('%i:%s: already inactive, not making any changes', finding.id, finding)
 
@@ -82,6 +112,27 @@ def delete(eng, risk_acceptance):
         finding.active = True
         finding.risk_accepted = False
         finding.save(dedupe_option=False)
+
+        if settings.RISK_ACCEPTANCE_REPLICATION:
+            logger.debug('Reactivating replicated findings thanks to risk acceptance deletion')
+            replicated_findings = Finding.objects.filter(
+                test__engagement__product=finding.test.engagement.product,
+                test__test_type=finding.test.test_type,
+                hash_code=finding.hash_code,
+                risk_accepted=True,
+                duplicate=True
+            ).exclude(id=finding.id).exclude(test__engagement=finding.test.engagement)
+
+            for replica in replicated_findings:
+                logger.debug(
+                    '%i:%s: unaccepting a.k.a reactivating replicated finding thanks to risk acceptance deletion.',
+                    replica.id, replica
+                )
+                replica.active = True
+                replica.risk_accepted = False
+                replica.duplicate = False
+                replica.duplicate_finding = None
+                replica.save(dedupe_option=False)
 
     # best effort jira integration, no status changes
     post_jira_comments(risk_acceptance, findings, unaccepted_message_creator)
@@ -103,6 +154,28 @@ def remove_finding_from_risk_acceptance(risk_acceptance, finding):
     finding.active = True
     finding.risk_accepted = False
     finding.save(dedupe_option=False)
+
+    if settings.RISK_ACCEPTANCE_REPLICATION:
+        logger.debug('Reactivating replicas of the removed finding')
+        replicated_findings = Finding.objects.filter(
+            test__engagement__product=finding.test.engagement.product,
+            test__test_type=finding.test.test_type,
+            hash_code=finding.hash_code,
+            risk_accepted=True,
+            duplicate=True
+        ).exclude(id=finding.id).exclude(test__engagement=finding.test.engagement)
+
+        for replica in replicated_findings:
+            logger.debug(
+                '%i:%s: unaccepting a.k.a reactivating replicas of the removed finding',
+                replica.id, replica
+            )
+            replica.active = True
+            replica.risk_accepted = False
+            replica.duplicate = False
+            replica.duplicate_finding = None
+            replica.save(dedupe_option=False)
+
     # best effort jira integration, no status changes
     post_jira_comments(risk_acceptance, [finding], unaccepted_message_creator)
 
@@ -113,6 +186,16 @@ def add_findings_to_risk_acceptance(risk_acceptance, findings):
         finding.risk_accepted = True
         finding.save(dedupe_option=False)
         risk_acceptance.accepted_findings.add(finding)
+        if settings.RISK_ACCEPTANCE_REPLICATION:
+            logger.debug('Replicating %i:%s', finding.id, finding)
+            same_test_type_findings = Finding.objects.filter(
+                test__engagement__product=finding.test.engagement.product,
+                test__test_type=finding.test.test_type
+            ).exclude(id=finding.id).exclude(duplicate=True).exclude(test__engagement=finding.test.engagement)
+            from dojo.utils import do_risk_acceptance_replication
+            for find in same_test_type_findings:
+                do_risk_acceptance_replication(find)
+
     risk_acceptance.save()
 
     # best effort jira integration, no status changes
