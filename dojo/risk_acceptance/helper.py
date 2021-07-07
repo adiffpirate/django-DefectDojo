@@ -103,6 +103,27 @@ def delete(eng, risk_acceptance):
         finding.risk_accepted = False
         finding.save(dedupe_option=False)
 
+        if settings.RISK_ACCEPTANCE_REPLICATION:
+            logger.debug('Reactivating replicated findings thanks to risk acceptance deletion')
+            replicated_findings = Finding.objects.filter(
+                test__engagement__product=finding.test.engagement.product,
+                test__test_type=finding.test.test_type,
+                hash_code=finding.hash_code,
+                risk_accepted=True,
+                duplicate=True
+            ).exclude(id=finding.id).exclude(test__engagement=finding.test.engagement)
+
+            for replica in replicated_findings:
+                logger.debug(
+                    '%i:%s: unaccepting a.k.a reactivating replicated finding thanks to risk acceptance deletion.',
+                    replica.id, replica
+                )
+                replica.active = True
+                replica.risk_accepted = False
+                replica.duplicate = False
+                replica.duplicate_finding = None
+                replica.save(dedupe_option=False)
+
     # best effort jira integration, no status changes
     post_jira_comments(risk_acceptance, findings, unaccepted_message_creator)
 
