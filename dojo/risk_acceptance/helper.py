@@ -85,6 +85,16 @@ def reinstate(risk_acceptance, old_expiration_date):
                 finding.risk_accepted = True
                 finding.save(dedupe_option=False)
                 reinstated_findings.append(finding)
+
+                if settings.RISK_ACCEPTANCE_REPLICATION:
+                    logger.debug('Replicating %i:%s', finding.id, finding)
+                    same_test_type_findings = Finding.objects.filter(
+                        test__engagement__product=finding.test.engagement.product,
+                        test__test_type=finding.test.test_type
+                    ).exclude(id=finding.id).exclude(duplicate=True).exclude(test__engagement=finding.test.engagement)
+                    from dojo.utils import do_risk_acceptance_replication
+                    for find in same_test_type_findings:
+                        do_risk_acceptance_replication(find)
             else:
                 logger.debug('%i:%s: already inactive, not making any changes', finding.id, finding)
 
