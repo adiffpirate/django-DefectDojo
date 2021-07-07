@@ -7,7 +7,8 @@ from dojo.jira_link.helper import escape_for_jira
 from dojo.notifications.helper import create_notification
 from django.urls import reverse
 from dojo.celery import app
-from dojo.models import System_Settings, Risk_Acceptance
+from dojo.models import System_Settings, Risk_Acceptance, Finding
+from django.conf import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -113,6 +114,15 @@ def add_findings_to_risk_acceptance(risk_acceptance, findings):
         finding.risk_accepted = True
         finding.save(dedupe_option=False)
         risk_acceptance.accepted_findings.add(finding)
+        if settings.RISK_ACCEPTANCE_REPLICATION:
+            logger.debug('Replicating %i:%s', finding.id, finding)
+            same_test_type_findings = Finding.objects.filter(
+                test__test_type=finding.test.test_type
+            ).exclude(id=finding.id).exclude(duplicate=True).exclude(test__engagement=finding.test.engagement)
+            from dojo.utils import do_risk_acceptance_replication
+            for find in same_test_type_findings:
+                do_risk_acceptance_replication(find)
+
     risk_acceptance.save()
 
     # best effort jira integration, no status changes
