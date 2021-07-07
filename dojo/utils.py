@@ -178,6 +178,7 @@ def do_replicate_false_positive(new_finding, *args, **kwargs):
 
     Mark finding as false positive if the same finding was previously marked
     as false positive in other products from the same product type.
+    The code was adapted from :func:`~dojo.utils.deduplicate_legacy`.
 
     :param new_finding: Finding to be replicated
     :param type: model:`dojo.Finding`
