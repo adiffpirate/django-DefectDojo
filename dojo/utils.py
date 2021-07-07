@@ -45,7 +45,7 @@ Helper functions for DefectDojo
 """
 
 
-def do_replicate_false_positive(new_finding, *args, **kwargs):
+def do_false_positive_replication(new_finding, *args, **kwargs):
     """Replicate false positives across product.
 
     Mark finding as false positive if the same finding was previously marked
@@ -57,7 +57,7 @@ def do_replicate_false_positive(new_finding, *args, **kwargs):
     :param type: model:`dojo.Finding`
     """
 
-    if new_finding.engagement.deduplication_on_engagement:
+    if new_finding.test.engagement.deduplication_on_engagement:
         # ---------------------------------------------------------
         # 1) Collects all the uniques findings that have the same:
         #      product and (
@@ -112,8 +112,8 @@ def do_replicate_false_positive(new_finding, *args, **kwargs):
 
         deduplicationLogger.debug(
             "Found " +
-            str(len(prodtype_findings_cwe)) + " findings with same cwe and hash, " +
-            str(len(prodtype_findings_title)) + " findings with same title and hash: " +
+            str(len(prod_findings_cwe)) + " findings with same cwe and hash, " +
+            str(len(prod_findings_title)) + " findings with same title and hash: " +
             str(len(total_findings)) + " findings with either one"
         )
 

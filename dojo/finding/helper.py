@@ -137,9 +137,9 @@ def post_process_finding_save(finding, dedupe_option=True, false_history=False, 
         else:
             deduplicationLogger.debug("skipping false positive history because it's disabled in system settings")
 
-    if settings.REPLICATE_FALSE_POSITIVE:
-        from dojo.utils import do_replicate_false_positive
-        do_replicate_false_positive(finding, *args, **kwargs)
+    if settings.FALSE_POSITIVE_REPLICATION:
+        from dojo.utils import do_false_positive_replication
+        do_false_positive_replication(finding, *args, **kwargs)
     else:
         deduplicationLogger.debug("skipping false positive replication because it's disabled in settings")
 

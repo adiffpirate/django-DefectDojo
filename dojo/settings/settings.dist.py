@@ -169,7 +169,7 @@ env = environ.Env(
     # new experimental feature that tracks history across multiple reimports for the same test
     DD_TRACK_IMPORT_HISTORY=(bool, False),
     # new experimental feature that replicates false positives across product (useful with deduplication_on_engagement)
-    DD_REPLICATE_FALSE_POSITIVE=(bool, False),
+    DD_FALSE_POSITIVE_REPLICATION=(bool, True),
 
     # Feature toggle for new authorization, which is incomplete at the moment.
     # Don't set it to True for productive environments!
@@ -899,7 +899,7 @@ DISABLE_FINDING_MERGE = env('DD_DISABLE_FINDING_MERGE')
 
 TRACK_IMPORT_HISTORY = env('DD_TRACK_IMPORT_HISTORY')
 
-REPLICATE_FALSE_POSITIVE = env('DD_REPLICATE_FALSE_POSITIVE')
+FALSE_POSITIVE_REPLICATION = env('DD_FALSE_POSITIVE_REPLICATION')
 
 # ------------------------------------------------------------------------------
 # JIRA
