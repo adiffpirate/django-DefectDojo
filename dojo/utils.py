@@ -46,128 +46,132 @@ Helper functions for DefectDojo
 
 
 def do_replicate_false_positive(new_finding, *args, **kwargs):
-    """Replicate false positives across product type.
+    """Replicate false positives across product.
 
     Mark finding as false positive if the same finding was previously marked
-    as false positive in other products from the same product type.
+    as false positive in other engagements from the same product.
+    Only when deduplication on engagement is active.
     The code was adapted from :func:`~dojo.utils.deduplicate_legacy`.
 
     :param new_finding: Finding to be replicated
     :param type: model:`dojo.Finding`
     """
 
-    # ---------------------------------------------------------
-    # 1) Collects all the uniques findings that have the same:
-    #      product_type and (
-    #        (title  and static_finding and dynamic_finding)
-    #        or (CWE and static_finding and dynamic_finding)
-    #      ) and test_type
-    #      and hash_code
-    #    as the new one and also are a false positive
-    #    from other products
-    #    (this is "cond1")
-    # ---------------------------------------------------------
-
-    prodtype_findings_cwe = (
-        Finding.objects.filter(
-            test__engagement__product__prod_type=new_finding.test.engagement.product.prod_type,
-            test__test_type=new_finding.test.test_type,
-            hash_code=new_finding.hash_code,
-            false_p=True,
-            cwe=new_finding.cwe
-        ).exclude(id=new_finding.id)
-        .exclude(cwe=0)
-        .exclude(duplicate=True)
-        .exclude(test__engagement__product=new_finding.test.engagement.product)
-        .values('id')
-    )
-
-    prodtype_findings_title = (
-        Finding.objects.filter(
-            test__engagement__product__prod_type=new_finding.test.engagement.product.prod_type,
-            test__test_type=new_finding.test.test_type,
-            hash_code=new_finding.hash_code,
-            false_p=True,
-            title=new_finding.title
-        ).exclude(id=new_finding.id)
-        .exclude(duplicate=True)
-        .exclude(test__engagement__product=new_finding.test.engagement.product)
-        .values('id')
-    )
-
-    total_findings = (
-        Finding.objects.filter(
-            Q(id__in=prodtype_findings_cwe) | Q(id__in=prodtype_findings_title)
-        ).prefetch_related(
-            'endpoints',
-            'test',
-            'test__engagement',
-            'found_by',
-            'original_finding',
-            'test__test_type'
-        ).distinct()
-    )
-
-    deduplicationLogger.debug(
-        "Found " +
-        str(len(prodtype_findings_cwe)) + " findings with same cwe and hash, " +
-        str(len(prodtype_findings_title)) + " findings with same title and hash: " +
-        str(len(total_findings)) + " findings with either one"
-    )
-
-    for find in total_findings.order_by('id'):
-        flag_endpoints = False
-        flag_line_path = False
-
+    if new_finding.engagement.deduplication_on_engagement:
         # ---------------------------------------------------------
-        # 2) If existing and new findings have endpoints: compare them all
-        #    Else look at line+file_path
+        # 1) Collects all the uniques findings that have the same:
+        #      product and (
+        #        (title  and static_finding and dynamic_finding)
+        #        or (CWE and static_finding and dynamic_finding)
+        #      ) and test_type
+        #      and hash_code
+        #    as the new one and also are a false positive
+        #    from other engagements
+        #    (this is "cond1")
         # ---------------------------------------------------------
 
-        if find.endpoints.count() != 0 and new_finding.endpoints.count() != 0:
-            list1 = [e.host_with_port for e in new_finding.endpoints.all()]
-            list2 = [e.host_with_port for e in find.endpoints.all()]
-            if all(x in list1 for x in list2):
-                deduplicationLogger.debug(
-                    "%s: existing endpoints are present in new finding",
-                    find.id
-                )
-                flag_endpoints = True
-
-        elif new_finding.static_finding and new_finding.file_path and len(new_finding.file_path) > 0:
-            if str(find.line) == str(new_finding.line) and find.file_path == new_finding.file_path:
-                deduplicationLogger.debug("%s: file_path and line match", find.id)
-                flag_line_path = True
-            else:
-                deduplicationLogger.debug("no endpoints on one of the findings and file_path doesn't match; False positive replication will not occur")
-
-        else:
-            deduplicationLogger.debug("no endpoints on one of the findings and the new finding is either dynamic or doesn't have a file_path; False positive replication will not occur")
-
-        deduplicationLogger.debug(
-            'false positive replication flags for new finding (' + ('dynamic' if new_finding.dynamic_finding else 'static') + ') ' + str(new_finding.id) +
-            ' and existing finding ' + str(find.id) +
-            ' flag_endpoints: ' + str(flag_endpoints) + ' flag_line_path:' + str(flag_line_path)
+        prod_findings_cwe = (
+            Finding.objects.filter(
+                test__engagement__product=new_finding.test.engagement.product,
+                test__test_type=new_finding.test.test_type,
+                hash_code=new_finding.hash_code,
+                false_p=True,
+                cwe=new_finding.cwe
+            ).exclude(id=new_finding.id)
+            .exclude(cwe=0)
+            .exclude(duplicate=True)
+            .exclude(test__engagement=new_finding.test.engagement)
+            .values('id')
         )
 
-        # ---------------------------------------------------------
-        # 3) Findings are marked as false positive if 
-        #    (cond1 is true)
-        #    and they have the same:
-        #       endpoints or (line and file_path)
-        # ---------------------------------------------------------
+        prod_findings_title = (
+            Finding.objects.filter(
+                test__engagement__product=new_finding.test.engagement.product,
+                test__test_type=new_finding.test.test_type,
+                hash_code=new_finding.hash_code,
+                false_p=True,
+                title=new_finding.title
+            ).exclude(id=new_finding.id)
+            .exclude(duplicate=True)
+            .exclude(test__engagement=new_finding.test.engagement)
+            .values('id')
+        )
 
-        if flag_endpoints or flag_line_path:
-            try:
-                new_finding.false_p = True
-                new_finding.active = False
-                new_finding.verified = False
-                super(Finding, new_finding).save(*args, **kwargs)
-            except Exception as e:
-                deduplicationLogger.debug(str(e))
-                continue
+        total_findings = (
+            Finding.objects.filter(
+                Q(id__in=prod_findings_cwe) | Q(id__in=prod_findings_title)
+            ).prefetch_related(
+                'endpoints',
+                'test',
+                'test__engagement',
+                'found_by',
+                'original_finding',
+                'test__test_type'
+            ).distinct()
+        )
 
-            break
+        deduplicationLogger.debug(
+            "Found " +
+            str(len(prodtype_findings_cwe)) + " findings with same cwe and hash, " +
+            str(len(prodtype_findings_title)) + " findings with same title and hash: " +
+            str(len(total_findings)) + " findings with either one"
+        )
+
+        for find in total_findings.order_by('id'):
+            flag_endpoints = False
+            flag_line_path = False
+
+            # ---------------------------------------------------------
+            # 2) If existing and new findings have endpoints: compare them all
+            #    Else look at line+file_path
+            # ---------------------------------------------------------
+
+            if find.endpoints.count() != 0 and new_finding.endpoints.count() != 0:
+                list1 = [e.host_with_port for e in new_finding.endpoints.all()]
+                list2 = [e.host_with_port for e in find.endpoints.all()]
+                if all(x in list1 for x in list2):
+                    deduplicationLogger.debug(
+                        "%s: existing endpoints are present in new finding",
+                        find.id
+                    )
+                    flag_endpoints = True
+
+            elif new_finding.static_finding and new_finding.file_path and len(new_finding.file_path) > 0:
+                if str(find.line) == str(new_finding.line) and find.file_path == new_finding.file_path:
+                    deduplicationLogger.debug("%s: file_path and line match", find.id)
+                    flag_line_path = True
+                else:
+                    deduplicationLogger.debug("no endpoints on one of the findings and file_path doesn't match; False positive replication will not occur")
+
+            else:
+                deduplicationLogger.debug("no endpoints on one of the findings and the new finding is either dynamic or doesn't have a file_path; False positive replication will not occur")
+
+            deduplicationLogger.debug(
+                'false positive replication flags for new finding (' + ('dynamic' if new_finding.dynamic_finding else 'static') + ') ' + str(new_finding.id) +
+                ' and existing finding ' + str(find.id) +
+                ' flag_endpoints: ' + str(flag_endpoints) + ' flag_line_path:' + str(flag_line_path)
+            )
+
+            # ---------------------------------------------------------
+            # 3) Findings are marked as false positive if 
+            #    (cond1 is true)
+            #    and they have the same:
+            #       endpoints or (line and file_path)
+            # ---------------------------------------------------------
+
+            if flag_endpoints or flag_line_path:
+                try:
+                    new_finding.false_p = True
+                    new_finding.active = False
+                    new_finding.verified = False
+                    new_finding.duplicate = True
+                    new_finding.duplicate_finding = find
+                    super(Finding, new_finding).save(*args, **kwargs)
+                except Exception as e:
+                    deduplicationLogger.debug(str(e))
+                    continue
+
+                break
 
 def do_false_positive_history(new_finding, *args, **kwargs):
     logger.debug('%s: sync false positive history', new_finding.id)
