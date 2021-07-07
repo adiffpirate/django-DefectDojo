@@ -31,11 +31,30 @@ def expire_now(risk_acceptance):
                 finding.save(dedupe_option=False)
                 reactivated_findings.append(finding)
                 # findings remain in this risk acceptance for reporting / metrics purposes
+
+                if settings.RISK_ACCEPTANCE_REPLICATION:
+                    logger.debug('Reactivating replicated findings')
+                    replicated_findings = Finding.objects.filter(
+                        test__engagement__product=finding.test.engagement.product,
+                        test__test_type=finding.test.test_type,
+                        hash_code=finding.hash_code,
+                        risk_accepted=True,
+                        duplicate=True
+                    ).exclude(id=finding.id).exclude(test__engagement=finding.test.engagement)
+
+                    for replica in replicated_findings:
+                        logger.debug('%i:%s: unaccepting a.k.a reactivating replicated finding.', replica.id, replica)
+                        replica.active = True
+                        replica.risk_accepted = False
+                        replica.duplicate = False
+                        replica.duplicate_finding = None
+                        replica.save(dedupe_option=False)
             else:
                 logger.debug('%i:%s already active, no changes made.', finding.id, finding)
 
         # best effort JIRA integration, no status changes
         post_jira_comments(risk_acceptance, risk_acceptance.accepted_findings.all(), expiration_message_creator)
+
 
     risk_acceptance.expiration_date = timezone.now()
     risk_acceptance.expiration_date_handled = timezone.now()
@@ -117,6 +136,7 @@ def add_findings_to_risk_acceptance(risk_acceptance, findings):
         if settings.RISK_ACCEPTANCE_REPLICATION:
             logger.debug('Replicating %i:%s', finding.id, finding)
             same_test_type_findings = Finding.objects.filter(
+                test__engagement__product=finding.test.engagement.product,
                 test__test_type=finding.test.test_type
             ).exclude(id=finding.id).exclude(duplicate=True).exclude(test__engagement=finding.test.engagement)
             from dojo.utils import do_risk_acceptance_replication
