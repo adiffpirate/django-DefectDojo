@@ -1906,6 +1906,36 @@ def finding_bulk_update_all(request, pid=None):
                         # it will trigger the pre_save signal
                         find.save_no_options()
 
+                        if settings.FALSE_POSITIVE_REPLICATION:
+                            if find.false_p:
+                                logger.debug('Replicating %i:%s', find.id, find)
+                                same_test_type_findings = Finding.objects.filter(
+                                    test__engagement__product=find.test.engagement.product,
+                                    test__test_type=find.test.test_type,
+                                    hash_code=find.hash_code
+                                ).exclude(id=find.id).exclude(duplicate=True).exclude(test__engagement=find.test.engagement)
+                                from dojo.utils import do_false_positive_replication
+                                for potential_replica in same_test_type_findings:
+                                    do_false_positive_replication(potential_replica)
+                            else:
+                                logger.debug('Reactivating replicated findings')
+                                replicated_findings = Finding.objects.filter(
+                                    test__engagement__product=find.test.engagement.product,
+                                    test__test_type=find.test.test_type,
+                                    hash_code=find.hash_code,
+                                    false_p=True,
+                                    duplicate=True
+                                ).exclude(id=find.id).exclude(test__engagement=find.test.engagement)
+
+                                for replica in replicated_findings:
+                                    logger.debug('Reactivating replica %i:%s:', replica.id, replica)
+                                    replica.active = True
+                                    replica.verified = True
+                                    replica.false_p = False
+                                    replica.duplicate = False
+                                    replica.duplicate_finding = None
+                                    replica.save(dedupe_option=False)
+
                     for prod in prods:
                         calculate_grade(prod)
 
