@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('dojo', '0086_system_settings_replicate_false_positive_across_product_type'),
+        ('dojo', 'local_0001_product_risk_acceptance'),
     ]
 
     operations = [
